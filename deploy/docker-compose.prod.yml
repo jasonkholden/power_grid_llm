@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/pgl-prod-backend:latest
+    container_name: pgl-backend
+    restart: unless-stopped
+    environment:
+      - DB_PATH=/data/pgl.db
+      - ALLOWED_ORIGINS=https://${DOMAIN_NAME}
+      - ENVIRONMENT=production
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+    volumes:
+      - /opt/pgl/data:/data
+    networks:
+      - pgl-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/pgl-prod-frontend:latest
+    container_name: pgl-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ENVIRONMENT=production
+      - DOMAIN_NAME=${DOMAIN_NAME}
+    volumes:
+      - /etc/letsencrypt:/etc/nginx/ssl:ro
+      - /opt/pgl/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - /opt/pgl/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - pgl-network
+
+networks:
+  pgl-network:
+    driver: bridge
+    name: pgl-network

@@ -1,0 +1,50 @@
+services:
+  backend:
+    image: pgl-backend-dev:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: pgl-backend
+    ports:
+      - "8001:8001"
+    environment:
+      - DB_PATH=/data/pgl.db
+      - ALLOWED_ORIGINS=http://localhost:3001,http://frontend:3001
+      - PORT=8001
+    volumes:
+      - db_data:/data
+    networks:
+      - pgl-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: pgl-frontend-dev:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: pgl-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - pgl-network
+
+networks:
+  pgl-network:
+    driver: bridge
+    name: pgl-network
+
+volumes:
+  db_data:
+    name: pgl-db-data

@@ -1,0 +1,27 @@
+# Terraform state files (stored in S3)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Secret variables - NEVER commit these!
+terraform.tfvars.secret
+*.secret
+*.secret.*
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfvars files (except examples)
+!terraform.tfvars
+!terraform.tfvars.secret.example

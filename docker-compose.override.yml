@@ -1,0 +1,24 @@
+# Local development overrides - automatically loaded by docker-compose
+# Mounts source code for hot reload
+
+services:
+  backend:
+    # Override command to enable auto-reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./backend:/app
+      - db_data:/data
+    environment:
+      - DB_PATH=/data/pgl.db
+      - ALLOWED_ORIGINS=http://localhost:3001
+      - PYTHONDONTWRITEBYTECODE=1
+
+  frontend:
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/webpack.config.js:/app/webpack.config.js
+      # Preserve node_modules from container
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+      - CHOKIDAR_USEPOLLING=true
