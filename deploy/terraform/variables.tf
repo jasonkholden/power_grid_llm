@@ -60,3 +60,9 @@ variable "http_auth_line" {
   type        = string
   sensitive   = true
 }
+
+variable "ssh_public_key" {
+  description = "SSH public key for EC2 access"
+  type        = string
+  sensitive   = true
+}

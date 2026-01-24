@@ -5,7 +5,7 @@ aws_region    = "us-east-1"
 environment   = "prod"
 project_name  = "pgl"
 domain_name   = "powergridllm.com"
-instance_type = "t4g.nano"
+instance_type     = "t4g.medium"
 
 # home_ip is in terraform.tfvars.secret to avoid committing to source control
 

@@ -32,11 +32,19 @@ apt-get update
 apt-get install -y \
     docker.io \
     docker-compose \
-    awscli \
     nfs-common \
     certbot \
     python3-certbot-dns-route53 \
-    jq
+    jq \
+    unzip \
+    curl
+
+# Install AWS CLI v2 (not available in Ubuntu 24.04 repos)
+log "Installing AWS CLI v2..."
+curl -sL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "/tmp/awscliv2.zip"
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+rm -rf /tmp/aws /tmp/awscliv2.zip
 
 # Start and enable Docker
 log "Starting Docker..."

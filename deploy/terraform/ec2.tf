@@ -1,10 +1,22 @@
+# SSH Key Pair for EC2 access
+resource "aws_key_pair" "pgl_ec2" {
+  key_name   = "${var.project_name}-${var.environment}-ec2-key"
+  public_key = var.ssh_public_key
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-ec2-key"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
 # EC2 Instance for running the application
 resource "aws_instance" "pgl_main" {
   ami                    = data.aws_ami.pgl_ubuntu.id
   instance_type          = var.instance_type
   iam_instance_profile   = aws_iam_instance_profile.pgl_ec2.name
   vpc_security_group_ids = [aws_security_group.pgl_web_server.id]
-  key_name               = var.ssh_key_name != "" ? var.ssh_key_name : null
+  key_name               = aws_key_pair.pgl_ec2.key_name
 
   # User data script for instance initialization
   user_data = templatefile("${path.module}/../user-data.sh", {

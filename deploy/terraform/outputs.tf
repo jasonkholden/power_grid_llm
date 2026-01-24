@@ -49,8 +49,8 @@ output "ssm_connect_command" {
 }
 
 output "ssh_connect_command" {
-  value       = var.ssh_key_name != "" ? "ssh -i ~/.ssh/${var.ssh_key_name}.pem ubuntu@${aws_eip.pgl_main.public_ip}" : "SSH key not configured - use SSM Session Manager"
-  description = "Command to connect to EC2 via SSH (if key configured)"
+  value       = "ssh -i ~/.ssh/pgl-ec2 ubuntu@${aws_eip.pgl_main.public_ip}"
+  description = "Command to connect to EC2 via SSH"
 }
 
 # AWS Account Info
