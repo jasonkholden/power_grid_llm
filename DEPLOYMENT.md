@@ -48,16 +48,29 @@ Before running terraform, you need to create the S3 bucket and DynamoDB table fo
 
 ```bash
 # Create S3 bucket for terraform state
-aws s3 mb s3://pgl-terraform-state --region us-east-1
+aws s3api create-bucket \
+    --bucket powergridllm-terraform-state \
+    --region us-east-1
 
-# Enable versioning
+# Enable versioning (for state history/recovery)
 aws s3api put-bucket-versioning \
-    --bucket pgl-terraform-state \
+    --bucket powergridllm-terraform-state \
     --versioning-configuration Status=Enabled
+
+# Enable encryption
+aws s3api put-bucket-encryption \
+    --bucket powergridllm-terraform-state \
+    --server-side-encryption-configuration '{
+        "Rules": [{
+            "ApplyServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+            }
+        }]
+    }'
 
 # Create DynamoDB table for state locking
 aws dynamodb create-table \
-    --table-name pgl-terraform-locks \
+    --table-name powergridllm-terraform-locks \
     --attribute-definitions AttributeName=LockID,AttributeType=S \
     --key-schema AttributeName=LockID,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \

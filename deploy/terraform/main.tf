@@ -5,10 +5,10 @@ terraform {
   # NOTE: You must create the S3 bucket and DynamoDB table BEFORE running terraform init
   # See DEPLOYMENT.md for instructions
   backend "s3" {
-    bucket         = "pgl-terraform-state"
+    bucket         = "powergridllm-terraform-state"
     key            = "prod/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "pgl-terraform-locks"
+    dynamodb_table = "powergridllm-terraform-locks"
     encrypt        = true
   }
 
