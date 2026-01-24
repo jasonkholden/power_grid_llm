@@ -51,16 +51,25 @@ cd deploy/terraform
 terraform init
 
 # Preview changes
-terraform plan
+terraform plan -var-file=terraform.tfvars.secret
 
-# Apply changes
-terraform apply
+# If you are getting issues with a terraform lock
+terraform force-unlock -force <LOCK_ID from plan error msg>
+
+# Apply changes (creates all infrastructure)
+terraform apply -var-file=terraform.tfvars.secret
 
 # Show outputs
 terraform output
 
-# Destroy infrastructure (CAREFUL!)
-terraform destroy
+# Destroy just EC2 instance (to save money when not developing)
+terraform destroy -target=aws_instance.pgl_main -target=aws_eip.pgl_main -var-file=terraform.tfvars.secret
+
+# Re-create EC2 instance (after destroying)
+terraform apply -var-file=terraform.tfvars.secret
+
+# Destroy ALL infrastructure (CAREFUL!)
+terraform destroy -var-file=terraform.tfvars.secret
 ```
 
 ## AWS Debug / SSH Access
