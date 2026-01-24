@@ -1,5 +1,7 @@
 # Power Grid LLM
 
+![First Light](gallery/v1-e966ecf8c89c3/first_light.png)
+
 A website chatbot to help you decide when to do electricity-intensive tasks to minimize your carbon footprint. The canonical example is doing laundry.
 
 ## Goals
