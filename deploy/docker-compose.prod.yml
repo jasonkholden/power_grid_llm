@@ -21,6 +21,24 @@ services:
       retries: 3
       start_period: 10s
 
+  mcp-server:
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/pgl-prod-mcp-server:latest
+    container_name: pgl-mcp-server
+    restart: unless-stopped
+    environment:
+      - ISO_NE_USERNAME=${ISO_NE_USERNAME}
+      - ISO_NE_PASSWORD=${ISO_NE_PASSWORD}
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
+    networks:
+      - pgl-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('localhost',8080)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   frontend:
     image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/pgl-prod-frontend:latest
     container_name: pgl-frontend
@@ -37,6 +55,8 @@ services:
       - /opt/pgl/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       backend:
+        condition: service_healthy
+      mcp-server:
         condition: service_healthy
     networks:
       - pgl-network

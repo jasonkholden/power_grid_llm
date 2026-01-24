@@ -14,8 +14,11 @@ EFS_ID="${EFS_ID}"
 S3_BUCKET="${S3_BUCKET}"
 ECR_FRONTEND="${ECR_FRONTEND}"
 ECR_BACKEND="${ECR_BACKEND}"
+ECR_MCP_SERVER="${ECR_MCP_SERVER}"
 HTTP_AUTH_LINE="${HTTP_AUTH_LINE}"
 CLAUDE_API_KEY_PARAM="${CLAUDE_API_KEY_PARAM}"
+ISO_NE_USERNAME_PARAM="${ISO_NE_USERNAME_PARAM}"
+ISO_NE_PASSWORD_PARAM="${ISO_NE_PASSWORD_PARAM}"
 APP_DIR="${APP_DIR}"
 LOG_FILE="/var/log/user-data.log"
 
@@ -125,6 +128,8 @@ aws s3 cp "s3://$S3_BUCKET/config/nginx.conf" "$APP_DIR/nginx/nginx.conf" --regi
 # Fetch secrets from SSM Parameter Store
 log "Fetching secrets from SSM..."
 CLAUDE_API_KEY=$(aws ssm get-parameter --name "$CLAUDE_API_KEY_PARAM" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
+ISO_NE_USERNAME=$(aws ssm get-parameter --name "$ISO_NE_USERNAME_PARAM" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
+ISO_NE_PASSWORD=$(aws ssm get-parameter --name "$ISO_NE_PASSWORD_PARAM" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
 
 # Get AWS Account ID
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
@@ -136,6 +141,8 @@ AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID
 AWS_REGION=$AWS_REGION
 DOMAIN_NAME=$DOMAIN_NAME
 CLAUDE_API_KEY=$CLAUDE_API_KEY
+ISO_NE_USERNAME=$ISO_NE_USERNAME
+ISO_NE_PASSWORD=$ISO_NE_PASSWORD
 ENVIRONMENT=$ENVIRONMENT
 EOF
 chmod 600 "$APP_DIR/.env"
@@ -148,6 +155,7 @@ aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS 
 log "Pulling Docker images..."
 docker pull "$ECR_BACKEND:latest" || log "Backend image not yet available"
 docker pull "$ECR_FRONTEND:latest" || log "Frontend image not yet available"
+docker pull "$ECR_MCP_SERVER:latest" || log "MCP server image not yet available"
 
 # Start containers (if docker-compose.prod.yml exists)
 if [ -f "$APP_DIR/docker-compose.prod.yml" ]; then

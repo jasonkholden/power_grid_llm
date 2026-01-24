@@ -35,7 +35,9 @@ resource "aws_iam_policy" "pgl_ssm_parameters" {
           "ssm:GetParametersByPath"
         ]
         Resource = [
-          aws_ssm_parameter.pgl_claude_api_key.arn
+          aws_ssm_parameter.pgl_claude_api_key.arn,
+          aws_ssm_parameter.pgl_iso_ne_username.arn,
+          aws_ssm_parameter.pgl_iso_ne_password.arn
         ]
       },
       {
@@ -66,8 +68,53 @@ resource "aws_iam_role_policy_attachment" "pgl_ssm_parameters" {
   policy_arn = aws_iam_policy.pgl_ssm_parameters.arn
 }
 
+# ISO New England API Credentials (for MCP server)
+resource "aws_ssm_parameter" "pgl_iso_ne_username" {
+  name        = "/${var.project_name}/${var.environment}/iso-ne-username"
+  description = "ISO New England API username for power grid data"
+  type        = "SecureString"
+  value       = var.iso_ne_username
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-iso-ne-username"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "pgl_iso_ne_password" {
+  name        = "/${var.project_name}/${var.environment}/iso-ne-password"
+  description = "ISO New England API password for power grid data"
+  type        = "SecureString"
+  value       = var.iso_ne_password
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-iso-ne-password"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 # Outputs for reference
 output "claude_api_key_parameter_name" {
   value       = aws_ssm_parameter.pgl_claude_api_key.name
   description = "SSM Parameter name for Claude API key"
+}
+
+output "iso_ne_username_parameter_name" {
+  value       = aws_ssm_parameter.pgl_iso_ne_username.name
+  description = "SSM Parameter name for ISO-NE username"
+}
+
+output "iso_ne_password_parameter_name" {
+  value       = aws_ssm_parameter.pgl_iso_ne_password.name
+  description = "SSM Parameter name for ISO-NE password"
 }

@@ -5,29 +5,63 @@ This document describes how to deploy the Power Grid LLM application to AWS.
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         AWS Cloud                               │
-│  ┌─────────────┐    ┌──────────────────────────────────────┐    │
-│  │  Route53    │    │           EC2 (t4g.nano)             │    │
-│  │  DNS        │───▶│  ┌─────────┐     ┌─────────┐         │    │
-│  └─────────────┘    │  │Frontend │────▶│ Backend │         │    │
-│                     │  │(nginx)  │     │(FastAPI)│         │    │
-│  ┌─────────────┐    │  └────┬────┘     └────┬────┘         │    │
-│  │    ECR      │    │       │               │              │    │
-│  │  (Images)   │───▶│       │               │              │    │
-│  └─────────────┘    │       ▼               ▼              │    │
-│                     │  ┌─────────────────────────┐         │    │
-│  ┌─────────────┐    │  │     EFS (Database)      │         │    │
-│  │    S3       │    │  └─────────────────────────┘         │    │
-│  │  (Configs)  │───▶│                                      │    │
-│  └─────────────┘    └──────────────────────────────────────┘    │
-│                                                                 │
-│  ┌─────────────┐                                                │
-│  │    SSM      │  (Secrets: Claude API Key)                     │
-│  │ Parameters  │                                                │
-│  └─────────────┘                                                │
-└─────────────────────────────────────────────────────────────────┘
+                            INTERNET
+                               |
+        +----------------------+----------------------+
+        |                      |                      |
+        v                      v                      v
++----------------+    +----------------+    +------------------+
+|   Anthropic    |    |    ISO-NE      |    |      Users       |
+|  Claude API    |    |  Power Grid    |    | (browsers, MCP   |
+|                |    |  webservices   |    |  clients)        |
++-------^--------+    +-------^--------+    +--------+---------+
+        |                     |                      |
+        |                     |                      v
++-------+---------------------+--------------------------------------+
+|                         AWS Cloud                                  |
+|                                                                    |
+|  +------------+     +----------------------------------------------+
+|  |  Route53   |     |            EC2 (t4g.medium)                  |
+|  |    DNS     |---->|                                              |
+|  +------------+     |  +----------------------------------------+  |
+|                     |  |              nginx (443/80)            |  |
+|  +------------+     |  |                                        |  |
+|  |    ECR     |     |  |  /           -> frontend:3000          |  |
+|  |  (images)  |---->|  |  /api/*      -> backend:8000           |  |
+|  +------------+     |  |  /mcp        -> mcp-server:8080/mcp    |  |
+|                     |  |  /sse        -> mcp-server:8080/sse    |  |
+|  +------------+     |  +----------------------------------------+  |
+|  |     S3     |     |         |            |            |          |
+|  |  (configs) |---->|         v            v            v          |
+|  +------------+     |  +-----------+ +-----------+ +------------+  |
+|                     |  | frontend  | | backend   | | mcp-server |  |
+|  +------------+     |  |  (React)  | | (FastAPI) | | (FastMCP)  |  |
+|  |    SSM     |     |  +-----------+ +-----+-----+ +-----+------+  |
+|  | Parameters |---->|                      |             |         |
+|  | - Claude   |     |                      v             |         |
+|  | - ISO-NE   |     |  +-----------------------------------+       |
+|  +------------+     |  |          EFS (SQLite DB)          |       |
+|                     |  +-----------------------------------+       |
+|                     +----------------------------------------------+
++--------------------------------------------------------------------+
 ```
+
+### Service Endpoints
+
+| Path | Service | Description |
+|------|---------|-------------|
+| `/` | frontend | React chat UI |
+| `/api/*` | backend | FastAPI (Claude chat, health checks) |
+| `/mcp` | mcp-server | MCP Streamable HTTP transport (public) |
+| `/sse` | mcp-server | MCP SSE transport (legacy clients) |
+
+### MCP Server (Public)
+
+The MCP server at `https://powergridllm.com/mcp` exposes New England power grid tools:
+- `get_marginal_fuel()` - Current marginal fuel type
+- `get_full_fuel_mix()` - Complete generation mix with MW values
+
+Anyone can connect their MCP client (Claude Desktop, Cursor, etc.) to use these tools.
 
 ---
 

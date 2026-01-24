@@ -30,10 +30,13 @@ resource "aws_instance" "pgl_main" {
     S3_BUCKET         = aws_s3_bucket.pgl_persistent_data.id
     ECR_FRONTEND      = aws_ecr_repository.pgl_frontend.repository_url
     ECR_BACKEND       = aws_ecr_repository.pgl_backend.repository_url
+    ECR_MCP_SERVER    = aws_ecr_repository.pgl_mcp_server.repository_url
     HTTP_AUTH_LINE    = var.http_auth_line
     APP_DIR           = "/opt/${var.project_name}"
     # SSM parameter names for secrets
-    CLAUDE_API_KEY_PARAM = aws_ssm_parameter.pgl_claude_api_key.name
+    CLAUDE_API_KEY_PARAM  = aws_ssm_parameter.pgl_claude_api_key.name
+    ISO_NE_USERNAME_PARAM = aws_ssm_parameter.pgl_iso_ne_username.name
+    ISO_NE_PASSWORD_PARAM = aws_ssm_parameter.pgl_iso_ne_password.name
   })
 
   root_block_device {

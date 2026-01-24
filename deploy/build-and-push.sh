@@ -13,10 +13,18 @@ AWS_REGION=$(terraform output -raw aws_region 2>/dev/null || echo "us-east-1")
 AWS_ACCOUNT_ID=$(terraform output -raw aws_account_id 2>/dev/null)
 ECR_FRONTEND=$(terraform output -raw ecr_frontend_url 2>/dev/null)
 ECR_BACKEND=$(terraform output -raw ecr_backend_url 2>/dev/null)
+ECR_MCP_SERVER=$(terraform output -raw ecr_mcp_server_url 2>/dev/null)
 S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null)
 INSTANCE_ID=$(terraform output -raw instance_id 2>/dev/null)
+INSTANCE_IP=$(terraform output -raw instance_public_ip 2>/dev/null)
 DOMAIN_NAME=$(terraform output -raw domain_name 2>/dev/null)
 cd "$PROJECT_DIR"
+
+# SSH key path
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/pgl-ec2}"
+
+# MCP Server repo location (separate project)
+MCP_SERVER_DIR="${MCP_SERVER_DIR:-$PROJECT_DIR/../ne_power_grid_mcp_server}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -74,6 +82,31 @@ build_images() {
     log_info "Docker images built successfully"
 }
 
+build_mcp_server() {
+    log_info "Building MCP server Docker image..."
+
+    if [ ! -d "$MCP_SERVER_DIR" ]; then
+        log_error "MCP server directory not found: $MCP_SERVER_DIR"
+        log_error "Set MCP_SERVER_DIR env var or clone ne_power_grid_mcp_server alongside this repo"
+        exit 1
+    fi
+
+    docker build -t pgl-mcp-server:latest "$MCP_SERVER_DIR"
+
+    log_info "MCP server image built successfully"
+}
+
+push_mcp_server() {
+    log_info "Pushing MCP server image to ECR..."
+
+    ecr_login
+
+    docker tag pgl-mcp-server:latest "$ECR_MCP_SERVER:latest"
+    docker push "$ECR_MCP_SERVER:latest"
+
+    log_info "MCP server image pushed to ECR"
+}
+
 push_images() {
     log_info "Pushing images to ECR..."
 
@@ -108,57 +141,68 @@ upload_configs() {
 }
 
 restart_containers() {
-    log_info "Restarting containers on EC2..."
+    log_info "Restarting containers on EC2 via SSH..."
 
-    # Use SSM to run commands on EC2
-    COMMAND_ID=$(aws ssm send-command \
-        --instance-ids "$INSTANCE_ID" \
-        --document-name "AWS-RunShellScript" \
-        --parameters 'commands=[
-            "cd /opt/pgl",
-            "aws ecr get-login-password --region '"$AWS_REGION"' | docker login --username AWS --password-stdin '"$AWS_ACCOUNT_ID"'.dkr.ecr.'"$AWS_REGION"'.amazonaws.com",
-            "aws s3 cp s3://'"$S3_BUCKET"'/config/docker-compose.prod.yml docker-compose.prod.yml --region '"$AWS_REGION"'",
-            "aws s3 cp s3://'"$S3_BUCKET"'/config/nginx.conf nginx/nginx.conf --region '"$AWS_REGION"'",
-            "docker-compose -f docker-compose.prod.yml --env-file .env pull",
-            "docker-compose -f docker-compose.prod.yml --env-file .env up -d"
-        ]' \
-        --region "$AWS_REGION" \
-        --output text \
-        --query 'Command.CommandId')
+    if [ ! -f "$SSH_KEY" ]; then
+        log_error "SSH key not found: $SSH_KEY"
+        log_error "Set SSH_KEY env var or ensure ~/.ssh/pgl-ec2 exists"
+        exit 1
+    fi
 
-    log_info "SSM command sent: $COMMAND_ID"
-    log_info "Waiting for command to complete..."
+    # SSH command prefix
+    SSH_CMD="ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@$INSTANCE_IP"
 
-    aws ssm wait command-executed \
-        --command-id "$COMMAND_ID" \
-        --instance-id "$INSTANCE_ID" \
-        --region "$AWS_REGION" || true
+    # Download latest configs from S3
+    log_info "Downloading configs from S3..."
+    $SSH_CMD "cd /opt/pgl && sudo aws s3 cp s3://$S3_BUCKET/config/docker-compose.prod.yml docker-compose.prod.yml --region $AWS_REGION"
+    $SSH_CMD "cd /opt/pgl && sudo aws s3 cp s3://$S3_BUCKET/config/nginx.conf nginx/nginx.conf --region $AWS_REGION"
 
-    # Get command output
-    aws ssm get-command-invocation \
-        --command-id "$COMMAND_ID" \
-        --instance-id "$INSTANCE_ID" \
-        --region "$AWS_REGION" \
-        --query '[Status, StatusDetails]' \
-        --output text
+    # Login to ECR
+    log_info "Logging into ECR on EC2..."
+    $SSH_CMD "aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
-    log_info "Containers restarted"
+    # Pull latest images
+    log_info "Pulling latest images..."
+    $SSH_CMD "sudo docker pull $ECR_BACKEND:latest"
+    $SSH_CMD "sudo docker pull $ECR_FRONTEND:latest"
+    $SSH_CMD "sudo docker pull $ECR_MCP_SERVER:latest"
+
+    # Stop and remove all pgl containers (workaround for docker-compose 1.29.2 bug)
+    log_info "Stopping and removing containers..."
+    $SSH_CMD "sudo docker ps -a --filter 'name=pgl' -q | xargs -r sudo docker rm -f 2>/dev/null || true"
+
+    # Recreate containers
+    log_info "Starting containers..."
+    $SSH_CMD "cd /opt/pgl && sudo docker-compose -f docker-compose.prod.yml --env-file .env up -d"
+
+    # Show status
+    log_info "Container status:"
+    $SSH_CMD "sudo docker ps"
+
+    log_info "Containers restarted successfully"
 }
 
 show_usage() {
     echo "Usage: $0 [command]"
     echo ""
     echo "Commands:"
-    echo "  all      - Build, push, upload configs, and restart (full deployment)"
-    echo "  build    - Build Docker images locally"
-    echo "  push     - Push images to ECR"
-    echo "  upload   - Upload config files to S3"
-    echo "  restart  - Restart containers on EC2"
+    echo "  all        - Build, push, upload configs, and restart (full deployment)"
+    echo "  build      - Build Docker images locally (frontend + backend)"
+    echo "  push       - Push images to ECR (frontend + backend)"
+    echo "  upload     - Upload config files to S3"
+    echo "  restart    - Restart containers on EC2"
+    echo "  mcp-build  - Build MCP server Docker image (from ne_power_grid_mcp_server)"
+    echo "  mcp-push   - Push MCP server image to ECR"
+    echo "  mcp-all    - Build and push MCP server image"
     echo ""
     echo "Examples:"
-    echo "  $0 all       # Full deployment"
-    echo "  $0 build     # Just build images"
-    echo "  $0 restart   # Just restart containers with current images"
+    echo "  $0 all         # Full deployment (frontend + backend)"
+    echo "  $0 build       # Just build images"
+    echo "  $0 restart     # Just restart containers with current images"
+    echo "  $0 mcp-all     # Build and push MCP server"
+    echo ""
+    echo "Environment variables:"
+    echo "  MCP_SERVER_DIR  - Path to ne_power_grid_mcp_server repo (default: ../ne_power_grid_mcp_server)"
 }
 
 # Main
@@ -186,6 +230,20 @@ case "${1:-all}" in
     restart)
         check_prerequisites
         restart_containers
+        ;;
+    mcp-build)
+        build_mcp_server
+        ;;
+    mcp-push)
+        check_prerequisites
+        push_mcp_server
+        ;;
+    mcp-all)
+        check_prerequisites
+        build_mcp_server
+        push_mcp_server
+        log_info "MCP server deployment complete!"
+        log_info "Run '$0 restart' to update the running containers"
         ;;
     help|--help|-h)
         show_usage

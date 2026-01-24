@@ -51,7 +51,8 @@ resource "aws_iam_policy" "pgl_ecr_access" {
         ]
         Resource = [
           aws_ecr_repository.pgl_frontend.arn,
-          aws_ecr_repository.pgl_backend.arn
+          aws_ecr_repository.pgl_backend.arn,
+          aws_ecr_repository.pgl_mcp_server.arn
         ]
       },
       {

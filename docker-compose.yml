@@ -23,6 +23,28 @@ services:
       retries: 3
       start_period: 10s
 
+  mcp-server:
+    image: pgl-mcp-server-dev:latest
+    build:
+      context: ../ne_power_grid_mcp_server
+      dockerfile: Dockerfile
+    container_name: pgl-mcp-server
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../ne_power_grid_mcp_server/.env
+    environment:
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
+    networks:
+      - pgl-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('localhost',8080)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   frontend:
     image: pgl-frontend-dev:latest
     build:

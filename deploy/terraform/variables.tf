@@ -66,3 +66,15 @@ variable "ssh_public_key" {
   type        = string
   sensitive   = true
 }
+
+variable "iso_ne_username" {
+  description = "ISO New England API username for power grid data"
+  type        = string
+  sensitive   = true
+}
+
+variable "iso_ne_password" {
+  description = "ISO New England API password for power grid data"
+  type        = string
+  sensitive   = true
+}

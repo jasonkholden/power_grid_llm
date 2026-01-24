@@ -20,6 +20,11 @@ output "ecr_backend_url" {
   description = "ECR repository URL for backend"
 }
 
+output "ecr_mcp_server_url" {
+  value       = aws_ecr_repository.pgl_mcp_server.repository_url
+  description = "ECR repository URL for MCP server"
+}
+
 # Storage Outputs
 output "efs_id" {
   value       = aws_efs_file_system.pgl_main.id
