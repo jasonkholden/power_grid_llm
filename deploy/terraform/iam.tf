@@ -1,5 +1,5 @@
 # IAM Role for EC2 instance
-resource "aws_iam_role" "ec2_main" {
+resource "aws_iam_role" "pgl_ec2" {
   name = "${var.project_name}-${var.environment}-ec2-role"
 
   assume_role_policy = jsonencode({
@@ -23,9 +23,9 @@ resource "aws_iam_role" "ec2_main" {
 }
 
 # Instance profile for EC2
-resource "aws_iam_instance_profile" "ec2_main" {
+resource "aws_iam_instance_profile" "pgl_ec2" {
   name = "${var.project_name}-${var.environment}-ec2-instance-profile"
-  role = aws_iam_role.ec2_main.name
+  role = aws_iam_role.pgl_ec2.name
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-ec2-instance-profile"
@@ -35,7 +35,7 @@ resource "aws_iam_instance_profile" "ec2_main" {
 }
 
 # Policy for ECR access (pull images)
-resource "aws_iam_policy" "ecr_access" {
+resource "aws_iam_policy" "pgl_ecr_access" {
   name        = "${var.project_name}-${var.environment}-ecr-access-policy"
   description = "Allow EC2 to pull images from ECR"
 
@@ -50,8 +50,8 @@ resource "aws_iam_policy" "ecr_access" {
           "ecr:BatchCheckLayerAvailability"
         ]
         Resource = [
-          aws_ecr_repository.frontend.arn,
-          aws_ecr_repository.backend.arn
+          aws_ecr_repository.pgl_frontend.arn,
+          aws_ecr_repository.pgl_backend.arn
         ]
       },
       {
@@ -71,13 +71,13 @@ resource "aws_iam_policy" "ecr_access" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "ecr_access" {
-  role       = aws_iam_role.ec2_main.name
-  policy_arn = aws_iam_policy.ecr_access.arn
+resource "aws_iam_role_policy_attachment" "pgl_ecr_access" {
+  role       = aws_iam_role.pgl_ec2.name
+  policy_arn = aws_iam_policy.pgl_ecr_access.arn
 }
 
 # Policy for S3 access (configs and SSL certs)
-resource "aws_iam_policy" "s3_access" {
+resource "aws_iam_policy" "pgl_s3_access" {
   name        = "${var.project_name}-${var.environment}-s3-access-policy"
   description = "Allow EC2 to read/write configs and SSL certs in S3"
 
@@ -92,8 +92,8 @@ resource "aws_iam_policy" "s3_access" {
           "s3:ListBucket"
         ]
         Resource = [
-          aws_s3_bucket.persistent_data.arn,
-          "${aws_s3_bucket.persistent_data.arn}/*"
+          aws_s3_bucket.pgl_persistent_data.arn,
+          "${aws_s3_bucket.pgl_persistent_data.arn}/*"
         ]
       }
     ]
@@ -106,13 +106,13 @@ resource "aws_iam_policy" "s3_access" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "s3_access" {
-  role       = aws_iam_role.ec2_main.name
-  policy_arn = aws_iam_policy.s3_access.arn
+resource "aws_iam_role_policy_attachment" "pgl_s3_access" {
+  role       = aws_iam_role.pgl_ec2.name
+  policy_arn = aws_iam_policy.pgl_s3_access.arn
 }
 
 # Policy for Route53 access (certbot DNS-01 validation)
-resource "aws_iam_policy" "route53_certbot" {
+resource "aws_iam_policy" "pgl_route53_certbot" {
   name        = "${var.project_name}-${var.environment}-route53-certbot-policy"
   description = "Allow certbot to manage Route53 DNS records for SSL validation"
 
@@ -132,7 +132,7 @@ resource "aws_iam_policy" "route53_certbot" {
         Action = [
           "route53:ChangeResourceRecordSets"
         ]
-        Resource = "arn:aws:route53:::hostedzone/${data.aws_route53_zone.main.zone_id}"
+        Resource = "arn:aws:route53:::hostedzone/${data.aws_route53_zone.pgl_main.zone_id}"
       }
     ]
   })
@@ -144,13 +144,13 @@ resource "aws_iam_policy" "route53_certbot" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "route53_certbot" {
-  role       = aws_iam_role.ec2_main.name
-  policy_arn = aws_iam_policy.route53_certbot.arn
+resource "aws_iam_role_policy_attachment" "pgl_route53_certbot" {
+  role       = aws_iam_role.pgl_ec2.name
+  policy_arn = aws_iam_policy.pgl_route53_certbot.arn
 }
 
 # SSM Session Manager policy (for SSH-less access)
-resource "aws_iam_role_policy_attachment" "ssm_managed" {
-  role       = aws_iam_role.ec2_main.name
+resource "aws_iam_role_policy_attachment" "pgl_ssm_managed" {
+  role       = aws_iam_role.pgl_ec2.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }

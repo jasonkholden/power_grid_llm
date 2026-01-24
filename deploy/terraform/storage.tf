@@ -1,5 +1,5 @@
 # EFS Filesystem for persistent data (database, uploads)
-resource "aws_efs_file_system" "main" {
+resource "aws_efs_file_system" "pgl_main" {
   creation_token = "${var.project_name}-${var.environment}-efs"
   encrypted      = true
 
@@ -19,35 +19,35 @@ resource "aws_efs_file_system" "main" {
 }
 
 # EFS Mount Target (uses default VPC and first subnet)
-data "aws_vpc" "default" {
+data "aws_vpc" "pgl_default" {
   default = true
 }
 
-data "aws_subnets" "default" {
+data "aws_subnets" "pgl_default" {
   filter {
     name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+    values = [data.aws_vpc.pgl_default.id]
   }
 }
 
-resource "aws_efs_mount_target" "main" {
-  file_system_id  = aws_efs_file_system.main.id
-  subnet_id       = data.aws_subnets.default.ids[0]
-  security_groups = [aws_security_group.efs.id]
+resource "aws_efs_mount_target" "pgl_main" {
+  file_system_id  = aws_efs_file_system.pgl_main.id
+  subnet_id       = data.aws_subnets.pgl_default.ids[0]
+  security_groups = [aws_security_group.pgl_efs.id]
 }
 
 # Security group for EFS
-resource "aws_security_group" "efs" {
+resource "aws_security_group" "pgl_efs" {
   name        = "${var.project_name}-${var.environment}-efs-sg"
   description = "Security group for EFS mount targets"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = data.aws_vpc.pgl_default.id
 
   ingress {
     description     = "NFS from EC2"
     from_port       = 2049
     to_port         = 2049
     protocol        = "tcp"
-    security_groups = [aws_security_group.web_server.id]
+    security_groups = [aws_security_group.pgl_web_server.id]
   }
 
   tags = {
@@ -58,7 +58,7 @@ resource "aws_security_group" "efs" {
 }
 
 # S3 Bucket for configs, SSL certs, and deployment files
-resource "aws_s3_bucket" "persistent_data" {
+resource "aws_s3_bucket" "pgl_persistent_data" {
   bucket = "${var.project_name}-${var.environment}-persistent-data"
 
   tags = {
@@ -73,16 +73,16 @@ resource "aws_s3_bucket" "persistent_data" {
 }
 
 # Enable versioning for S3 bucket
-resource "aws_s3_bucket_versioning" "persistent_data" {
-  bucket = aws_s3_bucket.persistent_data.id
+resource "aws_s3_bucket_versioning" "pgl_persistent_data" {
+  bucket = aws_s3_bucket.pgl_persistent_data.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 # Enable encryption for S3 bucket
-resource "aws_s3_bucket_server_side_encryption_configuration" "persistent_data" {
-  bucket = aws_s3_bucket.persistent_data.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "pgl_persistent_data" {
+  bucket = aws_s3_bucket.pgl_persistent_data.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -92,8 +92,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "persistent_data" 
 }
 
 # Block public access to S3 bucket
-resource "aws_s3_bucket_public_access_block" "persistent_data" {
-  bucket = aws_s3_bucket.persistent_data.id
+resource "aws_s3_bucket_public_access_block" "pgl_persistent_data" {
+  bucket = aws_s3_bucket.pgl_persistent_data.id
 
   block_public_acls       = true
   block_public_policy     = true

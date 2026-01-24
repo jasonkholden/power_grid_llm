@@ -130,7 +130,7 @@ aws ssm put-parameter \
 |-------------|-----|
 | Local Frontend | http://localhost:3001 |
 | Local Backend | http://localhost:8001/api/health |
-| Production | https://foobar.com |
+| Production | https://powergridllm.com |
 
 ## Quick Checks
 

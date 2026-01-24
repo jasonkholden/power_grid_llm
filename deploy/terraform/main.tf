@@ -25,20 +25,20 @@ provider "aws" {
 }
 
 # Data source to get the Route53 hosted zone (must exist)
-data "aws_route53_zone" "main" {
+data "aws_route53_zone" "pgl_main" {
   name = var.domain_name
 }
 
 # Get available availability zones
-data "aws_availability_zones" "available" {
+data "aws_availability_zones" "pgl_available" {
   state = "available"
 }
 
 # Get current AWS account ID
-data "aws_caller_identity" "current" {}
+data "aws_caller_identity" "pgl_current" {}
 
 # Get the latest Ubuntu 24.04 ARM64 AMI
-data "aws_ami" "ubuntu" {
+data "aws_ami" "pgl_ubuntu" {
   most_recent = true
   owners      = ["099720109477"] # Canonical
 

@@ -1,5 +1,5 @@
 # ECR Repository for Frontend Docker images
-resource "aws_ecr_repository" "frontend" {
+resource "aws_ecr_repository" "pgl_frontend" {
   name                 = "${var.project_name}-${var.environment}-frontend"
   image_tag_mutability = "MUTABLE"
 
@@ -15,7 +15,7 @@ resource "aws_ecr_repository" "frontend" {
 }
 
 # ECR Repository for Backend Docker images
-resource "aws_ecr_repository" "backend" {
+resource "aws_ecr_repository" "pgl_backend" {
   name                 = "${var.project_name}-${var.environment}-backend"
   image_tag_mutability = "MUTABLE"
 
@@ -31,8 +31,8 @@ resource "aws_ecr_repository" "backend" {
 }
 
 # Lifecycle policy to keep only last 5 images (cost savings)
-resource "aws_ecr_lifecycle_policy" "frontend" {
-  repository = aws_ecr_repository.frontend.name
+resource "aws_ecr_lifecycle_policy" "pgl_frontend" {
+  repository = aws_ecr_repository.pgl_frontend.name
 
   policy = jsonencode({
     rules = [
@@ -52,8 +52,8 @@ resource "aws_ecr_lifecycle_policy" "frontend" {
   })
 }
 
-resource "aws_ecr_lifecycle_policy" "backend" {
-  repository = aws_ecr_repository.backend.name
+resource "aws_ecr_lifecycle_policy" "pgl_backend" {
+  repository = aws_ecr_repository.pgl_backend.name
 
   policy = jsonencode({
     rules = [

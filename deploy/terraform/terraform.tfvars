@@ -7,9 +7,7 @@ project_name  = "pgl"
 domain_name   = "powergridllm.com"
 instance_type = "t4g.nano"
 
-# Your home IP for restricted access during development
-# Get your IP with: curl ifconfig.me
-home_ip = "0.0.0.0/32"  # TODO: Update with your home IP (e.g., "1.2.3.4/32")
+# home_ip is in terraform.tfvars.secret to avoid committing to source control
 
 # Optional: SSH key name (leave empty to use SSM Session Manager only)
 ssh_key_name = ""

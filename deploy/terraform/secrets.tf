@@ -2,7 +2,7 @@
 # These parameters are encrypted at rest using AWS-managed keys
 
 # Claude API Key (SecureString - encrypted at rest)
-resource "aws_ssm_parameter" "claude_api_key" {
+resource "aws_ssm_parameter" "pgl_claude_api_key" {
   name        = "/${var.project_name}/${var.environment}/claude-api-key"
   description = "Anthropic Claude API key for LLM interactions"
   type        = "SecureString"
@@ -20,7 +20,7 @@ resource "aws_ssm_parameter" "claude_api_key" {
 }
 
 # IAM policy to allow EC2 to read SSM parameters
-resource "aws_iam_policy" "ssm_parameters" {
+resource "aws_iam_policy" "pgl_ssm_parameters" {
   name        = "${var.project_name}-${var.environment}-ssm-parameters-policy"
   description = "Allow EC2 to read SSM parameters for secrets"
 
@@ -35,7 +35,7 @@ resource "aws_iam_policy" "ssm_parameters" {
           "ssm:GetParametersByPath"
         ]
         Resource = [
-          aws_ssm_parameter.claude_api_key.arn
+          aws_ssm_parameter.pgl_claude_api_key.arn
         ]
       },
       {
@@ -61,13 +61,13 @@ resource "aws_iam_policy" "ssm_parameters" {
 }
 
 # Attach SSM policy to EC2 role
-resource "aws_iam_role_policy_attachment" "ssm_parameters" {
-  role       = aws_iam_role.ec2_main.name
-  policy_arn = aws_iam_policy.ssm_parameters.arn
+resource "aws_iam_role_policy_attachment" "pgl_ssm_parameters" {
+  role       = aws_iam_role.pgl_ec2.name
+  policy_arn = aws_iam_policy.pgl_ssm_parameters.arn
 }
 
 # Outputs for reference
 output "claude_api_key_parameter_name" {
-  value       = aws_ssm_parameter.claude_api_key.name
+  value       = aws_ssm_parameter.pgl_claude_api_key.name
   description = "SSM Parameter name for Claude API key"
 }

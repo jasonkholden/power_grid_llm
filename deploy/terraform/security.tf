@@ -1,6 +1,6 @@
 # Security group for the EC2 instance
 # Restricts access to home IP only during development
-resource "aws_security_group" "web_server" {
+resource "aws_security_group" "pgl_web_server" {
   name        = "${var.project_name}-${var.environment}-sec-group-home-access-only"
   description = "Security group for web server - home access only during development"
 
