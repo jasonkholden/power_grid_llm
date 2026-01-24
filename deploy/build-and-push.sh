@@ -119,8 +119,8 @@ restart_containers() {
             "aws ecr get-login-password --region '"$AWS_REGION"' | docker login --username AWS --password-stdin '"$AWS_ACCOUNT_ID"'.dkr.ecr.'"$AWS_REGION"'.amazonaws.com",
             "aws s3 cp s3://'"$S3_BUCKET"'/config/docker-compose.prod.yml docker-compose.prod.yml --region '"$AWS_REGION"'",
             "aws s3 cp s3://'"$S3_BUCKET"'/config/nginx.conf nginx/nginx.conf --region '"$AWS_REGION"'",
-            "docker compose -f docker-compose.prod.yml --env-file .env pull",
-            "docker compose -f docker-compose.prod.yml --env-file .env up -d"
+            "docker-compose -f docker-compose.prod.yml --env-file .env pull",
+            "docker-compose -f docker-compose.prod.yml --env-file .env up -d"
         ]' \
         --region "$AWS_REGION" \
         --output text \

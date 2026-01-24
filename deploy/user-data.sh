@@ -63,7 +63,7 @@ mount -a
 
 # Create HTTP Basic Auth file
 log "Creating HTTP auth file..."
-echo '$HTTP_AUTH_LINE' > "$APP_DIR/nginx/.htpasswd"
+echo '${HTTP_AUTH_LINE}' > "$APP_DIR/nginx/.htpasswd"
 chmod 644 "$APP_DIR/nginx/.htpasswd"
 
 # Handle SSL certificates
@@ -103,7 +103,7 @@ cat > /etc/letsencrypt/renewal-hooks/deploy/backup-to-s3.sh << 'HOOK'
 tar -czf /tmp/letsencrypt.tar.gz -C /etc letsencrypt
 aws s3 cp /tmp/letsencrypt.tar.gz "s3://${S3_BUCKET}/ssl/letsencrypt.tar.gz" --region "${AWS_REGION}"
 rm /tmp/letsencrypt.tar.gz
-docker compose -f ${APP_DIR}/docker-compose.prod.yml restart frontend || true
+docker-compose -f ${APP_DIR}/docker-compose.prod.yml restart frontend || true
 HOOK
 chmod +x /etc/letsencrypt/renewal-hooks/deploy/backup-to-s3.sh
 
@@ -153,7 +153,7 @@ docker pull "$ECR_FRONTEND:latest" || log "Frontend image not yet available"
 if [ -f "$APP_DIR/docker-compose.prod.yml" ]; then
     log "Starting containers..."
     cd "$APP_DIR"
-    docker compose -f docker-compose.prod.yml --env-file .env up -d
+    docker-compose -f docker-compose.prod.yml --env-file .env up -d
 else
     log "docker-compose.prod.yml not found in S3, waiting for first deployment..."
 fi
@@ -170,8 +170,8 @@ After=docker.service network-online.target
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=$APP_DIR
-ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml --env-file .env up -d
-ExecStop=/usr/bin/docker compose -f docker-compose.prod.yml down
+ExecStart=/usr/bin/docker-compose -f docker-compose.prod.yml --env-file .env up -d
+ExecStop=/usr/bin/docker-compose -f docker-compose.prod.yml down
 TimeoutStartSec=300
 
 [Install]

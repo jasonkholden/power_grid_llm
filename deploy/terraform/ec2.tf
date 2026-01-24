@@ -15,6 +15,7 @@ resource "aws_instance" "pgl_main" {
   ami                    = data.aws_ami.pgl_ubuntu.id
   instance_type          = var.instance_type
   iam_instance_profile   = aws_iam_instance_profile.pgl_ec2.name
+  subnet_id              = data.aws_subnet.pgl_default.id
   vpc_security_group_ids = [aws_security_group.pgl_web_server.id]
   key_name               = aws_key_pair.pgl_ec2.key_name
 

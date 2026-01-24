@@ -18,21 +18,21 @@ resource "aws_efs_file_system" "pgl_main" {
   }
 }
 
-# EFS Mount Target (uses default VPC and first subnet)
+# EFS Mount Target (uses default VPC and a specific subnet for consistency)
 data "aws_vpc" "pgl_default" {
   default = true
 }
 
-data "aws_subnets" "pgl_default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.pgl_default.id]
-  }
+# Get first available subnet for consistent placement
+data "aws_subnet" "pgl_default" {
+  vpc_id            = data.aws_vpc.pgl_default.id
+  availability_zone = data.aws_availability_zones.pgl_available.names[0]
+  default_for_az    = true
 }
 
 resource "aws_efs_mount_target" "pgl_main" {
   file_system_id  = aws_efs_file_system.pgl_main.id
-  subnet_id       = data.aws_subnets.pgl_default.ids[0]
+  subnet_id       = data.aws_subnet.pgl_default.id
   security_groups = [aws_security_group.pgl_efs.id]
 }
 
