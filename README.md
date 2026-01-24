@@ -1,6 +1,8 @@
 # Power Grid LLM
 
-![First Light](gallery/v1-e966ecf8c89c3/first_light.png)
+| v1 - First Light | v2 - MCP Server Integration |
+|:---:|:---:|
+| ![First Light](gallery/v1-e966ecf8c89c3/first_light.png) | ![MCP Power Grid](gallery/v2-72d3b16448b70db/power-grid-mix-via-mcp.png) |
 
 A website chatbot to help you decide when to do electricity-intensive tasks to minimize your carbon footprint. The canonical example is doing laundry.
 
