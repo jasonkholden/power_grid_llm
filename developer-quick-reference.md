@@ -4,23 +4,23 @@
 
 ```bash
 # Start local dev environment
-docker-compose up --build
+docker compose up --build
 
 # Open in browser
 open http://localhost:3001
 
 # Stop local environment
-docker-compose down
+docker compose down
 
 # View logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
+docker compose logs -f backend
+docker compose logs -f frontend
 
 # Rebuild single service
-docker-compose up --build backend
+docker compose up --build backend
 
 # Reset database (delete volume)
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Production Deployment
@@ -93,7 +93,7 @@ cat /var/log/user-data.log
 
 ```bash
 # Local: SQLite in docker volume
-docker-compose exec backend sqlite3 /data/pgl.db
+docker compose exec backend sqlite3 /data/pgl.db
 
 # Production: SSH first, then
 sqlite3 /opt/pgl/data/pgl.db

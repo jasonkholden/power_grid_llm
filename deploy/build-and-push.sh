@@ -167,13 +167,13 @@ restart_containers() {
     $SSH_CMD "sudo docker pull $ECR_FRONTEND:latest"
     $SSH_CMD "sudo docker pull $ECR_MCP_SERVER:latest"
 
-    # Stop and remove all pgl containers (workaround for docker-compose 1.29.2 bug)
+    # Stop and remove all pgl containers before recreating
     log_info "Stopping and removing containers..."
     $SSH_CMD "sudo docker ps -a --filter 'name=pgl' -q | xargs -r sudo docker rm -f 2>/dev/null || true"
 
     # Recreate containers
     log_info "Starting containers..."
-    $SSH_CMD "cd /opt/pgl && sudo docker-compose -f docker-compose.prod.yml --env-file .env up -d"
+    $SSH_CMD "cd /opt/pgl && sudo docker compose -f docker-compose.prod.yml --env-file .env up -d"
 
     # Show status
     log_info "Container status:"

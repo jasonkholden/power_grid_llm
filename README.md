@@ -18,7 +18,7 @@ A website chatbot to help you decide when to do electricity-intensive tasks to m
 
 ```bash
 # Start the application
-docker-compose up --build
+docker compose up --build
 
 # Visit:
 # - Frontend: http://localhost:3001

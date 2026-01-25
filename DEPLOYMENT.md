@@ -175,13 +175,13 @@ This will:
 
 ```bash
 # Start local environment
-docker-compose up --build
+docker compose up --build
 
 # Visit http://localhost:3001 (frontend)
 # Visit http://localhost:8001/api/health (backend)
 
 # Stop
-docker-compose down
+docker compose down
 ```
 
 ### Deploy Changes
