@@ -35,6 +35,7 @@ resource "aws_instance" "pgl_main" {
     APP_DIR           = "/opt/${var.project_name}"
     # SSM parameter names for secrets
     CLAUDE_API_KEY_PARAM  = aws_ssm_parameter.pgl_claude_api_key.name
+    OPENAI_API_KEY_PARAM  = aws_ssm_parameter.pgl_openai_api_key.name
     ISO_NE_USERNAME_PARAM = aws_ssm_parameter.pgl_iso_ne_username.name
     ISO_NE_PASSWORD_PARAM = aws_ssm_parameter.pgl_iso_ne_password.name
   })

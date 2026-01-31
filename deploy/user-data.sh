@@ -17,6 +17,7 @@ ECR_BACKEND="${ECR_BACKEND}"
 ECR_MCP_SERVER="${ECR_MCP_SERVER}"
 HTTP_AUTH_LINE="${HTTP_AUTH_LINE}"
 CLAUDE_API_KEY_PARAM="${CLAUDE_API_KEY_PARAM}"
+OPENAI_API_KEY_PARAM="${OPENAI_API_KEY_PARAM}"
 ISO_NE_USERNAME_PARAM="${ISO_NE_USERNAME_PARAM}"
 ISO_NE_PASSWORD_PARAM="${ISO_NE_PASSWORD_PARAM}"
 APP_DIR="${APP_DIR}"
@@ -128,6 +129,7 @@ aws s3 cp "s3://$S3_BUCKET/config/nginx.conf" "$APP_DIR/nginx/nginx.conf" --regi
 # Fetch secrets from SSM Parameter Store
 log "Fetching secrets from SSM..."
 CLAUDE_API_KEY=$(aws ssm get-parameter --name "$CLAUDE_API_KEY_PARAM" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
+OPENAI_API_KEY=$(aws ssm get-parameter --name "$OPENAI_API_KEY_PARAM" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
 ISO_NE_USERNAME=$(aws ssm get-parameter --name "$ISO_NE_USERNAME_PARAM" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
 ISO_NE_PASSWORD=$(aws ssm get-parameter --name "$ISO_NE_PASSWORD_PARAM" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
 
@@ -141,6 +143,7 @@ AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID
 AWS_REGION=$AWS_REGION
 DOMAIN_NAME=$DOMAIN_NAME
 CLAUDE_API_KEY=$CLAUDE_API_KEY
+OPENAI_API_KEY=$OPENAI_API_KEY
 ISO_NE_USERNAME=$ISO_NE_USERNAME
 ISO_NE_PASSWORD=$ISO_NE_PASSWORD
 ENVIRONMENT=$ENVIRONMENT

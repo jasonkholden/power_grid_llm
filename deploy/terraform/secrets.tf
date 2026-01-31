@@ -19,6 +19,24 @@ resource "aws_ssm_parameter" "pgl_claude_api_key" {
   }
 }
 
+# OpenAI API Key (SecureString - encrypted at rest)
+resource "aws_ssm_parameter" "pgl_openai_api_key" {
+  name        = "/${var.project_name}/${var.environment}/openai-api-key"
+  description = "OpenAI API key for LLM interactions (used by OpenAI Agents SDK)"
+  type        = "SecureString"
+  value       = var.openai_api_key
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-openai-api-key"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 # IAM policy to allow EC2 to read SSM parameters
 resource "aws_iam_policy" "pgl_ssm_parameters" {
   name        = "${var.project_name}-${var.environment}-ssm-parameters-policy"
@@ -36,6 +54,7 @@ resource "aws_iam_policy" "pgl_ssm_parameters" {
         ]
         Resource = [
           aws_ssm_parameter.pgl_claude_api_key.arn,
+          aws_ssm_parameter.pgl_openai_api_key.arn,
           aws_ssm_parameter.pgl_iso_ne_username.arn,
           aws_ssm_parameter.pgl_iso_ne_password.arn
         ]
@@ -107,6 +126,11 @@ resource "aws_ssm_parameter" "pgl_iso_ne_password" {
 output "claude_api_key_parameter_name" {
   value       = aws_ssm_parameter.pgl_claude_api_key.name
   description = "SSM Parameter name for Claude API key"
+}
+
+output "openai_api_key_parameter_name" {
+  value       = aws_ssm_parameter.pgl_openai_api_key.name
+  description = "SSM Parameter name for OpenAI API key"
 }
 
 output "iso_ne_username_parameter_name" {

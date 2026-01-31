@@ -12,6 +12,9 @@ services:
       - DB_PATH=/data/pgl.db
       - ALLOWED_ORIGINS=http://localhost:3001
       - PYTHONDONTWRITEBYTECODE=1
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_TOKEN}
+      - MCP_SERVER_URL=http://mcp-server:8080/mcp
 
   frontend:
     volumes:

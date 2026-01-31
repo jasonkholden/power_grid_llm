@@ -55,6 +55,12 @@ variable "claude_api_key" {
   sensitive   = true
 }
 
+variable "openai_api_key" {
+  description = "OpenAI API key for LLM interactions (used by OpenAI Agents SDK)"
+  type        = string
+  sensitive   = true
+}
+
 variable "http_auth_line" {
   description = "HTTP basic auth credentials for nginx (username:hashed_password). Generate with: htpasswd -n username"
   type        = string

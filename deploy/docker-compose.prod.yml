@@ -10,6 +10,8 @@ services:
       - ALLOWED_ORIGINS=https://${DOMAIN_NAME}
       - ENVIRONMENT=production
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MCP_SERVER_URL=http://mcp-server:8080/mcp
     volumes:
       - /opt/pgl/data:/data
     networks:
