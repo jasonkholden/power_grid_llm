@@ -118,16 +118,16 @@ sudo cat /var/log/letsencrypt/letsencrypt.log
 ## Secrets Management
 
 ```bash
-# View Claude API key in SSM
+# View OpenAI API key in SSM
 aws ssm get-parameter \
-    --name /pgl/prod/claude-api-key \
+    --name /pgl/prod/openai-api-key \
     --with-decryption \
     --region us-east-1
 
-# Update Claude API key
+# Update OpenAI API key
 aws ssm put-parameter \
-    --name /pgl/prod/claude-api-key \
-    --value "sk-ant-new-key" \
+    --name /pgl/prod/openai-api-key \
+    --value "sk-new-key" \
     --type SecureString \
     --overwrite \
     --region us-east-1

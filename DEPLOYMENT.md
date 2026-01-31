@@ -11,8 +11,8 @@ This document describes how to deploy the Power Grid LLM application to AWS.
         |                      |                      |
         v                      v                      v
 +----------------+    +----------------+    +------------------+
-|   Anthropic    |    |    ISO-NE      |    |      Users       |
-|  Claude API    |    |  Power Grid    |    | (browsers, MCP   |
+|    OpenAI      |    |    ISO-NE      |    |      Users       |
+|      API       |    |  Power Grid    |    | (browsers, MCP   |
 |                |    |  webservices   |    |  clients)        |
 +-------^--------+    +-------^--------+    +--------+---------+
         |                     |                      |
@@ -29,19 +29,18 @@ This document describes how to deploy the Power Grid LLM application to AWS.
 |  |    ECR     |     |  |  /           -> frontend:3000          |  |
 |  |  (images)  |---->|  |  /api/*      -> backend:8000           |  |
 |  +------------+     |  |  /mcp        -> mcp-server:8080/mcp    |  |
-|                     |  |  /sse        -> mcp-server:8080/sse    |  |
-|  +------------+     |  +----------------------------------------+  |
-|  |     S3     |     |         |            |            |          |
-|  |  (configs) |---->|         v            v            v          |
-|  +------------+     |  +-----------+ +-----------+ +------------+  |
-|                     |  | frontend  | | backend   | | mcp-server |  |
-|  +------------+     |  |  (React)  | | (FastAPI) | | (FastMCP)  |  |
-|  |    SSM     |     |  +-----------+ +-----+-----+ +-----+------+  |
-|  | Parameters |---->|                      |             |         |
-|  | - Claude   |     |                      v             |         |
-|  | - ISO-NE   |     |  +-----------------------------------+       |
-|  +------------+     |  |          EFS (SQLite DB)          |       |
-|                     |  +-----------------------------------+       |
+|                     |  +----------------------------------------+  |
+|  +------------+     |         |            |            |          |
+|  |     S3     |     |         v            v            v          |
+|  |  (configs) |---->|  +-----------+ +-----------+ +------------+  |
+|  +------------+     |  | frontend  | | backend   | | mcp-server |  |
+|                     |  |  (React)  | | (FastAPI) | | (FastMCP)  |  |
+|  +------------+     |  +-----------+ +-----+-----+ +-----+------+  |
+|  |    SSM     |     |                      |             |         |
+|  | Parameters |---->|                      v             |         |
+|  | - OpenAI   |     |  +-----------------------------------+       |
+|  | - ISO-NE   |     |  |          EFS (SQLite DB)          |       |
+|  +------------+     |  +-----------------------------------+       |
 |                     +----------------------------------------------+
 +--------------------------------------------------------------------+
 ```
@@ -51,9 +50,8 @@ This document describes how to deploy the Power Grid LLM application to AWS.
 | Path | Service | Description |
 |------|---------|-------------|
 | `/` | frontend | React chat UI |
-| `/api/*` | backend | FastAPI (Claude chat, health checks) |
+| `/api/*` | backend | FastAPI (OpenAI Agents SDK chat, health checks) |
 | `/mcp` | mcp-server | MCP Streamable HTTP transport (public) |
-| `/sse` | mcp-server | MCP SSE transport (legacy clients) |
 
 ### MCP Server (Public)
 
@@ -62,6 +60,47 @@ The MCP server at `https://powergridllm.com/mcp` exposes New England power grid 
 - `get_full_fuel_mix()` - Complete generation mix with MW values
 
 Anyone can connect their MCP client (Claude Desktop, Cursor, etc.) to use these tools.
+
+### Backend Architecture (OpenAI Agents SDK)
+
+The backend uses **OpenAI Agents SDK** with MCP integration for chat functionality:
+
+```
++------------------------------- EC2 Instance -------------------------------+
+|                                                                             |
+|  +------------------------ backend container -------------------------+     |
+|  |                                                                    |     |
+|  |  FastAPI /api/chat                                                 |     |
+|  |        |                                                           |     |
+|  |        v                                                           |     |
+|  |  +-----------------------------------------------------------+     |     |
+|  |  |              OpenAI Agents SDK (Agent + Runner)           |     |     |
+|  |  |                                                           |     |     |
+|  |  |   1. Sends prompt ──────────────────────────────────────────────────────> OpenAI API
+|  |  |   2. Receives tool_use request <────────────────────────────────────────  (gpt-4o)
+|  |  |   3. Executes tool ─────────+                             |     |     |
+|  |  |   4. Returns result <───────|                             |     |     |
+|  |  |   5. Loops until done       |                             |     |     |
+|  |  +-----------------------------------------------------------+     |     |
+|  |                                |                                   |     |
+|  +--------------------------------|-----------------------------------+     |
+|                                   |                                         |
+|                                   v  (MCP JSON-RPC)                         |
+|  +------------------------ mcp-server container ----------------------+     |
+|  |                                                                    |     |
+|  |  FastMCP Server (port 8080)                                        |     |
+|  |    - get_marginal_fuel()                                           |     |
+|  |    - get_full_fuel_mix() ───────────────────────────────────────────────────> ISO-NE APIs
+|  |                                                                    |     |
+|  +--------------------------------------------------------------------+     |
+|                                                                             |
++-----------------------------------------------------------------------------+
+```
+
+The backend maintains an MCP connection via `MCPServerStreamableHttp` and automatically:
+- Discovers available tools from the MCP server at startup
+- Handles tool-use loops when the LLM requests grid data
+- Returns final responses to the frontend
 
 ---
 
@@ -123,7 +162,7 @@ vim terraform.tfvars
 # Create secret variables file
 cp terraform.tfvars.secret.example terraform.tfvars.secret
 vim terraform.tfvars.secret
-# Add: claude_api_key, http_auth_line
+# Add: openai_api_key, http_auth_line, iso_ne credentials
 ```
 
 **Get your home IP:**
@@ -247,25 +286,38 @@ sudo certbot renew --force-renewal
 
 Secrets are stored in AWS SSM Parameter Store.
 
-### View Claude API Key
+### View OpenAI API Key
 ```bash
 aws ssm get-parameter \
-    --name /pgl/prod/claude-api-key \
+    --name /pgl/prod/openai-api-key \
     --with-decryption \
     --region us-east-1
 ```
 
-### Update Claude API Key
+### Update OpenAI API Key
 ```bash
 aws ssm put-parameter \
-    --name /pgl/prod/claude-api-key \
-    --value "sk-ant-new-key-here" \
+    --name /pgl/prod/openai-api-key \
+    --value "sk-new-key-here" \
     --type SecureString \
     --overwrite \
     --region us-east-1
 
 # Restart containers to pick up new key
 ./deploy/build-and-push.sh restart
+```
+
+### View ISO-NE Credentials
+```bash
+aws ssm get-parameter \
+    --name /pgl/prod/iso-ne-username \
+    --with-decryption \
+    --region us-east-1
+
+aws ssm get-parameter \
+    --name /pgl/prod/iso-ne-password \
+    --with-decryption \
+    --region us-east-1
 ```
 
 ---
