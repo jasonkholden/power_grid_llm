@@ -8,8 +8,8 @@ Uses OpenAI Agents SDK with MCP for tool integration.
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator
+from typing import List, Optional, Literal
 import os
 import logging
 
@@ -100,15 +100,26 @@ app.add_middleware(
 )
 
 
-# Request/Response models
+# Input validation constants
+MAX_MESSAGE_LENGTH = 4000  # Max characters per message
+MAX_HISTORY_LENGTH = 50    # Max conversation history entries
+
+# Request/Response models with validation
 class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
-    content: str
+    role: Literal["user", "assistant"]  # Restrict to valid roles only
+    content: str = Field(..., max_length=MAX_MESSAGE_LENGTH)
 
 
 class ChatRequest(BaseModel):
-    message: str
-    history: Optional[List[ChatMessage]] = []
+    message: str = Field(..., min_length=1, max_length=MAX_MESSAGE_LENGTH)
+    history: Optional[List[ChatMessage]] = Field(default=[], max_length=MAX_HISTORY_LENGTH)
+
+    @field_validator('message')
+    @classmethod
+    def message_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError('Message cannot be empty or whitespace only')
+        return v.strip()
 
 
 class ChatResponse(BaseModel):
