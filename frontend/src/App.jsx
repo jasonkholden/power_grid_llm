@@ -6,7 +6,8 @@ import './styles.css';
 const API_URL = process.env.REACT_APP_API_URL || '';
 
 function App() {
-    const [apiMessage, setApiMessage] = useState(null);
+    const [backendConnected, setBackendConnected] = useState(false);
+    const [mcpConnected, setMcpConnected] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -19,13 +20,14 @@ function App() {
 
     // Initial API health check
     useEffect(() => {
-        fetch(`${API_URL}/api/hello`)
+        fetch(`${API_URL}/api/health`)
             .then(response => {
                 if (!response.ok) throw new Error('API request failed');
                 return response.json();
             })
             .then(data => {
-                setApiMessage(data);
+                setBackendConnected(data.status === 'healthy');
+                setMcpConnected(data.mcp_connected === true);
                 setLoading(false);
             })
             .catch(err => {
@@ -93,10 +95,23 @@ function App() {
                 <p className="subtitle">Carbon-aware scheduling for your home</p>
 
                 <div className="status-box">
-                    {loading && <p className="loading">Connecting to backend...</p>}
+                    {loading && <p className="loading">Connecting...</p>}
                     {error && <p className="error">Error: {error}</p>}
-                    {apiMessage && (
-                        <p className="message connected-indicator">Connected</p>
+                    {!loading && !error && (
+                        <div className="status-list">
+                            <div className={`status-item ${backendConnected ? 'connected' : 'disconnected'}`}>
+                                <span className="status-dot"></span>
+                                <a href="https://github.com/jasonkholden/power_grid_llm" target="_blank" rel="noopener noreferrer" className="status-link">
+                                    Agent Backend
+                                </a>
+                            </div>
+                            <div className={`status-item ${mcpConnected ? 'connected' : 'disconnected'}`}>
+                                <span className="status-dot"></span>
+                                <a href="https://github.com/jasonkholden/ne_power_grid_mcp_server" target="_blank" rel="noopener noreferrer" className="status-link">
+                                    NE Power Grid MCP Server
+                                </a>
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -111,7 +126,7 @@ function App() {
                             onClick={handleQuickQuestion}
                             disabled={chatLoading}
                         >
-                            What's the marginal fuel right now?
+                            What's the marginal fuel right now on the New England Power Grid?
                         </button>
                     )}
 
