@@ -17,15 +17,22 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
+# Create non-root user for security
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
+
 # Copy installed packages from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=builder /root/.local /home/appuser/.local
+ENV PATH=/home/appuser/.local/bin:$PATH
 
 # Copy application code
 COPY main.py .
 
-# Create data directory for SQLite
-RUN mkdir -p /data
+# Create data directory for SQLite with proper ownership
+RUN mkdir -p /data && chown -R appuser:appgroup /data /app
+
+# Switch to non-root user
+USER appuser
 
 # Environment defaults
 ENV DB_PATH=/data/pgl.db
