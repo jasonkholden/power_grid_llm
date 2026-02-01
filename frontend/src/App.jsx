@@ -83,7 +83,7 @@ function App() {
     };
 
     const handleQuickQuestion = () => {
-        sendMessage("What's the marginal fuel right now?");
+        sendMessage("What's the marginal fuel right now on the grid?  Tell me about what a marginal fuel means and show me the raw grid power mix data.  make it human readable");
     };
 
     return (
