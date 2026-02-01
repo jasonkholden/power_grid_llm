@@ -30,6 +30,7 @@ limiter = Limiter(key_func=get_remote_address)
 # Configuration
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://mcp-server:8080/mcp")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 
 # System prompt for power grid assistant
 SYSTEM_PROMPT = """You are a helpful assistant that provides information about the New England power grid.
@@ -148,13 +149,15 @@ async def health_check(request: Request):
     }
 
 
-@app.get("/api/hello")
-async def hello():
-    """Hello world endpoint for testing"""
-    return {
-        "message": "Hello from Power Grid LLM!",
-        "hint": "When is the best time to do laundry?"
-    }
+# Debug endpoint - only available when DEBUG_MODE=true
+if DEBUG_MODE:
+    @app.get("/api/hello")
+    async def hello():
+        """Hello world endpoint for testing (debug mode only)"""
+        return {
+            "message": "Hello from Power Grid LLM!",
+            "hint": "When is the best time to do laundry?"
+        }
 
 
 @app.post("/api/chat", response_model=ChatResponse)
