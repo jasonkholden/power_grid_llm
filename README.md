@@ -4,6 +4,10 @@
 |:---:|:---:|
 | ![First Light](gallery/v1-e966ecf8c89c3/first_light.png) | ![MCP Power Grid](gallery/v2-72d3b16448b70db/power-grid-mix-via-mcp.png) |
 
+| v3 - OpenAI Agents SDK | v3 - Follow-up Query |
+|:---:|:---:|
+| ![Initial Agent Response](gallery/v3-6b8cf5bf70f4/initial_agent_response.png) | ![Top Green Fuel](gallery/v3-6b8cf5bf70f4/top_green_fuel.png) |
+
 A website chatbot to help you decide when to do electricity-intensive tasks to minimize your carbon footprint. The canonical example is doing laundry.
 
 ## Goals
@@ -47,7 +51,7 @@ terraform apply
 | Backend | FastAPI |
 | Database | SQLite |
 | Infrastructure | Terraform + AWS |
-| LLM | Claude API |
+| LLM | OpenAI Agents SDK |
 | MCP Server | fastmcp |
 
 ## Project Structure
