@@ -6,7 +6,7 @@ Uses OpenAI Agents SDK with MCP for tool integration.
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -15,10 +15,17 @@ import logging
 
 from agents import Agent, Runner
 from agents.mcp import MCPServerStreamableHttp
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Rate limiting configuration
+# Uses X-Forwarded-For header when behind nginx proxy
+limiter = Limiter(key_func=get_remote_address)
 
 # Configuration
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://mcp-server:8080/mcp")
@@ -78,6 +85,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Register rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # CORS configuration
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3001").split(",")
 app.add_middleware(
@@ -116,7 +127,8 @@ async def root():
 
 
 @app.get("/api/health")
-async def health_check():
+@limiter.limit("60/minute")
+async def health_check(request: Request):
     """Health check endpoint for container orchestration"""
     return {
         "status": "healthy",
@@ -135,7 +147,8 @@ async def hello():
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+@limiter.limit("10/minute")
+async def chat(request: Request, chat_request: ChatRequest):
     """
     Chat endpoint using OpenAI Agents SDK with MCP tools.
 
@@ -153,16 +166,16 @@ async def chat(request: ChatRequest):
 
     # Build conversation input from history
     conversation_input = ""
-    for msg in request.history:
+    for msg in chat_request.history:
         if msg.role == "user":
             conversation_input += f"User: {msg.content}\n"
         else:
             conversation_input += f"Assistant: {msg.content}\n"
 
     # Add the new user message
-    conversation_input += f"User: {request.message}"
+    conversation_input += f"User: {chat_request.message}"
 
-    logger.info(f"Processing chat request with {len(request.history)} history messages")
+    logger.info(f"Processing chat request with {len(chat_request.history)} history messages")
 
     # Create agent with MCP server tools
     agent = Agent(
@@ -182,8 +195,8 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
 
     # Build updated history
-    updated_history = list(request.history)
-    updated_history.append(ChatMessage(role="user", content=request.message))
+    updated_history = list(chat_request.history)
+    updated_history.append(ChatMessage(role="user", content=chat_request.message))
     updated_history.append(ChatMessage(role="assistant", content=final_text))
 
     return ChatResponse(response=final_text, history=updated_history)
