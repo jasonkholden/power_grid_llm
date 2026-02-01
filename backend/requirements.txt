@@ -1,8 +1,11 @@
+# Pin versions for reproducible builds and security
+# Use ~= for compatible releases (allows patch updates)
+# Review and update versions regularly for security patches
 fastapi==0.109.2
 uvicorn[standard]==0.27.1
 python-multipart==0.0.9
-anthropic>=0.40.0
-openai>=1.0.0
-openai-agents>=0.0.3
-httpx>=0.27.0
+anthropic~=0.40.0
+openai~=1.58.0
+openai-agents~=0.0.3
+httpx~=0.27.0
 slowapi==0.1.9
